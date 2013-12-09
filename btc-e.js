@@ -19,15 +19,24 @@ var BTCE = function(apiKey, secret, nonceGenerator) {
       callback(new Error("Must provide API key and secret to use the trade API."));
       return;
     }
-
-    if (typeof self.nonceLast === 'undefined' || self.nonceLast < Math.ceil((new Date()).getTime() / 1000)) self.nonceLast = Math.ceil((new Date()).getTime() / 1000);
-    self.nonceLast++;
     
     // If the user provided a function for generating the nonce, then use it.
     if(self.nonce) {
       params.nonce = self.nonce();
     } else {
-      params.nonce = self.nonceLast;
+      var nonce = Math.round((new Date()).getTime() / 1000);
+      
+      // nonce throttle
+      if (nonce === self.nonceLast) {
+        setTimeout(function() {
+          self.makeRequest(method, params, callback);
+        }, 50);
+        return;
+      }
+
+      params.nonce = nonce;
+
+      self.nonceLast = nonce;
     }
 
     params.method = method;
